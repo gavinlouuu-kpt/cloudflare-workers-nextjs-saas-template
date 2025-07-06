@@ -41,7 +41,10 @@
     "vars": {
         "EMAIL_FROM": "no-reply@notifications.agenticdev.agency",
         "EMAIL_FROM_NAME": "AgenticDev.agency",
-        "EMAIL_REPLY_TO": "support@agenticdev.agency"
+        "EMAIL_REPLY_TO": "support@agenticdev.agency",
+        // Ollama local testing configuration
+        "LLAMA_API_URL": "http://localhost:11434/v1/chat/completions",
+        "CUSTOM_MODEL_API_URL": "http://localhost:11434/v1/chat/completions"
     },
     /**
      * Note: Use secrets to store sensitive data.
