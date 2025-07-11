@@ -1,19 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useServerAction } from "zsa-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { generateAIResponse, getAvailableModels } from "@/actions/ai-model.actions";
-import { Spinner } from "@/components/ui/spinner";
-import { useEffect } from "react";
-import { Bot, User, CreditCard, Settings } from "lucide-react";
+import React, { useState, useEffect, useCallback } from 'react';
+import { useServerAction } from 'zsa-react';
+import { generateAIResponse, getAvailableModels } from '@/actions/ai-model.actions';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Bot, CreditCard, Settings, User, Send } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Message {
   id: string;
@@ -23,6 +26,12 @@ interface Message {
   creditsUsed?: number;
   tokensUsed?: number;
   timestamp: Date;
+}
+
+interface AvailableModel {
+  name: string;
+  creditCost: number;
+  available: boolean;
 }
 
 interface AIModelChatProps {
@@ -36,7 +45,7 @@ export function AIModelChat({ className }: AIModelChatProps) {
   const [temperature, setTemperature] = useState(0.7);
   const [maxTokens, setMaxTokens] = useState(1000);
   const [useCache, setUseCache] = useState(true);
-  const [availableModels, setAvailableModels] = useState<any[]>([]);
+  const [availableModels, setAvailableModels] = useState<AvailableModel[]>([]);
   const [userCredits, setUserCredits] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
 
@@ -52,7 +61,7 @@ export function AIModelChat({ className }: AIModelChatProps) {
     onSuccess: (result) => {
       toast.dismiss();
       toast.success(`Response generated! (${result.data.creditsUsed} credits used)`);
-      
+
       // Add AI response to messages
       const aiMessage: Message = {
         id: Date.now().toString(),
@@ -64,14 +73,14 @@ export function AIModelChat({ className }: AIModelChatProps) {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, aiMessage]);
-      
+
       // Update user credits
       setUserCredits(prev => prev - result.data.creditsUsed);
     },
   });
 
   // Server action for getting available models
-  const { execute: loadModels, isPending: isLoadingModels } = useServerAction(getAvailableModels, {
+  const { execute: loadModels } = useServerAction(getAvailableModels, {
     onError: (error) => {
       toast.error(error.err?.message || "Failed to load models");
     },
@@ -85,14 +94,19 @@ export function AIModelChat({ className }: AIModelChatProps) {
     },
   });
 
+  // Memoized load models function to avoid useEffect dependency issues
+  const loadModelsCallback = useCallback(() => {
+    loadModels({});
+  }, [loadModels]);
+
   // Load available models on component mount
   useEffect(() => {
-    loadModels({});
-  }, []);
+    loadModelsCallback();
+  }, [loadModelsCallback]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!prompt.trim() || !selectedModel) {
       toast.error("Please enter a prompt and select a model");
       return;
@@ -110,7 +124,7 @@ export function AIModelChat({ className }: AIModelChatProps) {
     // Generate AI response
     await generateResponse({
       prompt: prompt.trim(),
-      model: selectedModel as any,
+      model: selectedModel as 'qwen2.5:0.5b' | 'llama3.2:1b' | 'llama3.2:3b' | 'phi3:mini',
       temperature,
       maxTokens,
       useCache,
@@ -300,12 +314,11 @@ export function AIModelChat({ className }: AIModelChatProps) {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="prompt">Your Message</Label>
-              <Textarea
+              <Input
                 id="prompt"
                 placeholder="Enter your message or question..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                rows={3}
                 className="resize-none"
               />
             </div>
@@ -323,7 +336,7 @@ export function AIModelChat({ className }: AIModelChatProps) {
               >
                 {isGenerating ? (
                   <>
-                    <Spinner className="h-4 w-4 mr-2" />
+                    <Send className="h-4 w-4 mr-2" />
                     Generating...
                   </>
                 ) : (
@@ -341,4 +354,4 @@ export function AIModelChat({ className }: AIModelChatProps) {
       </Card>
     </div>
   );
-} 
+}

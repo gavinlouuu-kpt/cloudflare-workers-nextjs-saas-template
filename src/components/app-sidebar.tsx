@@ -13,6 +13,7 @@ import {
   SquareTerminal,
   CreditCard,
   Users,
+  Bot,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -88,6 +89,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "/dashboard",
         icon: SquareTerminal,
         isActive: true,
+      },
+      {
+        title: "AI Chat",
+        url: "/dashboard/ai-chat" as Route,
+        icon: Bot,
       },
       {
         title: "Teams",

@@ -6,14 +6,25 @@ import { withRateLimit, RATE_LIMITS } from "@/utils/with-rate-limit";
 import { withKVCache } from "@/utils/with-kv-cache";
 import { logTransaction, updateUserCredits } from "@/utils/credits";
 import { CREDIT_TRANSACTION_TYPE } from "@/db/schema";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { 
-  aiModelRequestSchema, 
+import {
+  aiModelRequestSchema,
   aiModelStreamRequestSchema,
   type AIModelRequest,
   type AIModelStreamRequest
 } from "@/schemas/ai-model.schema";
 import { z } from "zod";
+
+// Type for OpenAI-compatible API response
+interface OpenAICompatibleResponse {
+  choices?: Array<{
+    message?: {
+      content?: string;
+    };
+  }>;
+  usage?: {
+    total_tokens?: number;
+  };
+}
 
 // Configuration for different self-hosted models
 const MODEL_CONFIG = {
@@ -72,14 +83,14 @@ function transformRequestForModel(model: string, request: AIModelRequest) {
         max_tokens: request.maxTokens,
         stream: false,
       };
-    
+
     default:
       throw new Error(`Unsupported model: ${model}`);
   }
 }
 
 // Helper function to extract response text from different API formats
-function extractResponseText(model: string, response: any): string {
+function extractResponseText(model: string, response: OpenAICompatibleResponse): string {
   // All Ollama models return OpenAI-compatible format
   switch (model) {
     case 'qwen2.5:0.5b':
@@ -87,7 +98,7 @@ function extractResponseText(model: string, response: any): string {
     case 'llama3.2:3b':
     case 'phi3:mini':
       return response.choices?.[0]?.message?.content || '';
-    
+
     default:
       return String(response);
   }
@@ -165,7 +176,7 @@ async function callSelfHostedModel(
   userId: string
 ) {
   const transformedRequest = transformRequestForModel(request.model, request);
-  
+
   try {
     const response = await fetch(modelConfig.apiUrl, {
       method: 'POST',
@@ -178,7 +189,7 @@ async function callSelfHostedModel(
       throw new Error(`Model API error (${response.status}): ${errorText}`);
     }
 
-    const data = await response.json() as any;
+    const data = await response.json() as OpenAICompatibleResponse;
     const responseText = extractResponseText(request.model, data);
 
     // Deduct credits and log transaction
@@ -287,4 +298,4 @@ export const getAIUsageStats = createServerAction()
       modelUsage: [],
       period: input.days,
     };
-  }); 
+  });
