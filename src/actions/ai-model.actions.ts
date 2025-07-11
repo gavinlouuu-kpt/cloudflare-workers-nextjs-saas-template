@@ -26,54 +26,34 @@ interface OpenAICompatibleResponse {
   };
 }
 
-// Configuration for different self-hosted models
+// Configuration for DeepSeek models
 const MODEL_CONFIG = {
-  'qwen2.5:0.5b': {
-    apiUrl: process.env.LLAMA_API_URL || 'http://localhost:11434/v1/chat/completions',
-    apiKey: process.env.LLAMA_API_KEY || '', // Ollama doesn't require API key for local
-    creditCost: 1, // Very cheap for testing
+  'deepseek-chat': {
+    apiUrl: 'https://api.deepseek.com/v1/chat/completions',
+    apiKey: process.env.DEEPSEEK_API_KEY || '',
+    creditCost: 5, // Based on DeepSeek pricing: ~$0.27 per 1M input tokens
     getHeaders: () => ({
       'Content-Type': 'application/json',
-      ...(process.env.LLAMA_API_KEY ? { 'Authorization': `Bearer ${process.env.LLAMA_API_KEY}` } : {}),
+      'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
     }),
   },
-  'llama3.2:1b': {
-    apiUrl: process.env.LLAMA_API_URL || 'http://localhost:11434/v1/chat/completions',
-    apiKey: process.env.LLAMA_API_KEY || '',
-    creditCost: 2, // Cheap for testing
+  'deepseek-reasoner': {
+    apiUrl: 'https://api.deepseek.com/v1/chat/completions',
+    apiKey: process.env.DEEPSEEK_API_KEY || '',
+    creditCost: 10, // Higher cost for reasoning model: ~$0.55 per 1M input tokens
     getHeaders: () => ({
       'Content-Type': 'application/json',
-      ...(process.env.LLAMA_API_KEY ? { 'Authorization': `Bearer ${process.env.LLAMA_API_KEY}` } : {}),
-    }),
-  },
-  'llama3.2:3b': {
-    apiUrl: process.env.LLAMA_API_URL || 'http://localhost:11434/v1/chat/completions',
-    apiKey: process.env.LLAMA_API_KEY || '',
-    creditCost: 5, // Moderate cost
-    getHeaders: () => ({
-      'Content-Type': 'application/json',
-      ...(process.env.LLAMA_API_KEY ? { 'Authorization': `Bearer ${process.env.LLAMA_API_KEY}` } : {}),
-    }),
-  },
-  'phi3:mini': {
-    apiUrl: process.env.CUSTOM_MODEL_API_URL || 'http://localhost:11434/v1/chat/completions',
-    apiKey: process.env.CUSTOM_MODEL_API_KEY || '',
-    creditCost: 3, // Small Microsoft model
-    getHeaders: () => ({
-      'Content-Type': 'application/json',
-      ...(process.env.CUSTOM_MODEL_API_KEY ? { 'Authorization': `Bearer ${process.env.CUSTOM_MODEL_API_KEY}` } : {}),
+      'Authorization': `Bearer ${process.env.DEEPSEEK_API_KEY}`,
     }),
   },
 } as const;
 
 // Helper function to transform request for different API formats
 function transformRequestForModel(model: string, request: AIModelRequest) {
-  // All Ollama models use OpenAI-compatible format
+  // DeepSeek uses OpenAI-compatible format
   switch (model) {
-    case 'qwen2.5:0.5b':
-    case 'llama3.2:1b':
-    case 'llama3.2:3b':
-    case 'phi3:mini':
+    case 'deepseek-chat':
+    case 'deepseek-reasoner':
       return {
         model: model,
         messages: [
@@ -91,12 +71,10 @@ function transformRequestForModel(model: string, request: AIModelRequest) {
 
 // Helper function to extract response text from different API formats
 function extractResponseText(model: string, response: OpenAICompatibleResponse): string {
-  // All Ollama models return OpenAI-compatible format
+  // DeepSeek returns OpenAI-compatible format
   switch (model) {
-    case 'qwen2.5:0.5b':
-    case 'llama3.2:1b':
-    case 'llama3.2:3b':
-    case 'phi3:mini':
+    case 'deepseek-chat':
+    case 'deepseek-reasoner':
       return response.choices?.[0]?.message?.content || '';
 
     default:
@@ -131,16 +109,16 @@ export const generateAIResponse = createServerAction()
       if (input.useCache) {
         try {
           return await withKVCache(
-            async () => await callSelfHostedModel(input, modelConfig, session.user.id),
+            async () => await callDeepSeekModel(input, modelConfig, session.user.id),
             { key: cacheKey, ttl: '1 hour' }
           );
         } catch (error) {
           console.error('Cache error, falling back to direct call:', error);
-          return await callSelfHostedModel(input, modelConfig, session.user.id);
+          return await callDeepSeekModel(input, modelConfig, session.user.id);
         }
       }
 
-      return await callSelfHostedModel(input, modelConfig, session.user.id);
+      return await callDeepSeekModel(input, modelConfig, session.user.id);
     }, RATE_LIMITS.PURCHASE); // Using existing rate limit, you can create a custom one
   });
 
@@ -165,12 +143,12 @@ export const generateAIResponseStream = createServerAction()
       }
 
       // For streaming, we can't use cache easily, so we call directly
-      return await callSelfHostedModelStream(input, modelConfig, session.user.id);
+      return await callDeepSeekModelStream(input, modelConfig, session.user.id);
     }, RATE_LIMITS.PURCHASE);
   });
 
-// Helper function to call self-hosted model
-async function callSelfHostedModel(
+// Helper function to call DeepSeek model
+async function callDeepSeekModel(
   request: AIModelRequest,
   modelConfig: typeof MODEL_CONFIG[keyof typeof MODEL_CONFIG],
   userId: string
@@ -209,13 +187,13 @@ async function callSelfHostedModel(
       tokensUsed: data.usage?.total_tokens || 0,
     };
   } catch (error) {
-    console.error('Self-hosted model API error:', error);
+    console.error('DeepSeek API error:', error);
     throw new Error(`Failed to generate AI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
 // Helper function for streaming responses
-async function callSelfHostedModelStream(
+async function callDeepSeekModelStream(
   request: AIModelStreamRequest,
   modelConfig: typeof MODEL_CONFIG[keyof typeof MODEL_CONFIG],
   userId: string
@@ -255,7 +233,7 @@ async function callSelfHostedModelStream(
       creditsUsed: modelConfig.creditCost,
     };
   } catch (error) {
-    console.error('Self-hosted model streaming error:', error);
+    console.error('DeepSeek streaming API error:', error);
     throw new Error(`Failed to generate streaming AI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

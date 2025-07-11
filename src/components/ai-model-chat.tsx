@@ -124,7 +124,7 @@ export function AIModelChat({ className }: AIModelChatProps) {
     // Generate AI response
     await generateResponse({
       prompt: prompt.trim(),
-      model: selectedModel as 'qwen2.5:0.5b' | 'llama3.2:1b' | 'llama3.2:3b' | 'phi3:mini',
+      model: selectedModel as 'deepseek-chat' | 'deepseek-reasoner',
       temperature,
       maxTokens,
       useCache,
@@ -153,7 +153,7 @@ export function AIModelChat({ className }: AIModelChatProps) {
                 AI Model Chat
               </CardTitle>
               <CardDescription>
-                Chat with your self-hosted AI models
+                Chat with DeepSeek AI models via API
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -221,7 +221,7 @@ export function AIModelChat({ className }: AIModelChatProps) {
                   type="number"
                   value={maxTokens}
                   onChange={(e) => setMaxTokens(Number(e.target.value))}
-                  max={4000}
+                  max={8000}
                   min={1}
                   step={1}
                   className="w-full"

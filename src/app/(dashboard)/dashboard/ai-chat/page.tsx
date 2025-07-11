@@ -17,14 +17,14 @@ export default async function AIChatPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold mt-4">AI Model Chat</h1>
           <p className="text-muted-foreground mt-2">
-            Chat with your self-hosted AI models using the integrated API system
+            Chat with DeepSeek AI models using their powerful API
           </p>
         </div>
 
         <Alert
           color="primary"
-          title="Self-Hosted AI Integration"
-          description="This page demonstrates how to integrate self-hosted AI models with this Cloudflare Workers template. Configure your model APIs using environment variables and start chatting!"
+          title="DeepSeek AI Integration"
+          description="This page demonstrates how to integrate DeepSeek AI models with this Cloudflare Workers template. Configure your DeepSeek API key as a secret and start chatting with advanced AI models!"
           className="mb-6"
         />
 
@@ -32,4 +32,4 @@ export default async function AIChatPage() {
       </div>
     </>
   );
-} 
+}
