@@ -82,7 +82,7 @@ export async function createPaymentIntent({ packageId }: CreatePaymentIntentInpu
         amount: creditPackage.price * 100,
         currency: 'usd',
         description: `${creditPackage.credits} Credits - TickNow Credit Package`, // This shows on receipts
-        statement_descriptor: 'TICKNOW CREDITS', // Shows on credit card statements
+        statement_descriptor_suffix: 'CREDITS', // Shows on credit card statements as "TICKNOW *CREDITS"
         automatic_payment_methods: {
           enabled: true,
           allow_redirects: 'never',
@@ -99,7 +99,21 @@ export async function createPaymentIntent({ packageId }: CreatePaymentIntentInpu
       return { clientSecret: paymentIntent.client_secret };
     } catch (error) {
       console.error("Payment intent creation error:", error);
-      throw new Error("Failed to create payment intent");
+      
+      // Provide more specific error messages for better UX
+      if (error instanceof Error) {
+        if (error.message.includes('rate limit')) {
+          throw new Error("Too many payment attempts. Please wait a moment and try again.");
+        }
+        if (error.message.includes('card')) {
+          throw new Error("There was an issue with the payment method. Please try a different card.");
+        }
+        if (error.message.includes('insufficient')) {
+          throw new Error("Payment failed due to insufficient funds. Please check your account balance.");
+        }
+      }
+      
+      throw new Error("Unable to process payment at this time. Please try again or contact support.");
     }
   }, RATE_LIMITS.PURCHASE);
 }
@@ -138,7 +152,21 @@ export async function confirmPayment({ packageId, paymentIntentId }: PurchaseCre
       return { success: true };
     } catch (error) {
       console.error("Purchase error:", error);
-      throw new Error("Failed to process payment");
+      
+      // Provide specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('not completed') || error.message.includes('not successful')) {
+          throw new Error("Payment was not completed successfully. Please try again.");
+        }
+        if (error.message.includes('Invalid payment intent')) {
+          throw new Error("Payment verification failed. Please contact support if this persists.");
+        }
+        if (error.message.includes('already processed')) {
+          throw new Error("This payment has already been processed.");
+        }
+      }
+      
+      throw new Error("Unable to confirm payment. Please contact support for assistance.");
     }
   }, RATE_LIMITS.PURCHASE);
 }
