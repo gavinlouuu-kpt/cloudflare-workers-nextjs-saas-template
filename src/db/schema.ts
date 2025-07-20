@@ -127,12 +127,23 @@ export const creditTransactionTable = sqliteTable("credit_transaction", {
   paymentIntentId: text({
     length: 255,
   }),
+  // Receipt-related fields
+  receiptId: text({
+    length: 255,
+  }),
+  receiptUrl: text({
+    length: 500,
+  }),
+  receiptEmailSent: integer({
+    mode: "timestamp",
+  }),
 }, (table) => ([
   index('credit_transaction_user_id_idx').on(table.userId),
   index('credit_transaction_type_idx').on(table.type),
   index('credit_transaction_created_at_idx').on(table.createdAt),
   index('credit_transaction_expiration_date_idx').on(table.expirationDate),
   index('credit_transaction_payment_intent_id_idx').on(table.paymentIntentId),
+  index('credit_transaction_receipt_id_idx').on(table.receiptId),
 ]));
 
 // Define item types that can be purchased
@@ -161,6 +172,71 @@ export const purchasedItemsTable = sqliteTable("purchased_item", {
   index('purchased_item_type_idx').on(table.itemType),
   // Composite index for checking if a user owns a specific item of a specific type
   index('purchased_item_user_item_idx').on(table.userId, table.itemType, table.itemId),
+]));
+
+// Receipt table for storing receipt metadata and download URLs
+export const receiptTable = sqliteTable("receipt", {
+  ...commonColumns,
+  id: text().primaryKey().$defaultFn(() => `rcpt_${createId()}`).notNull(),
+  userId: text().notNull().references(() => userTable.id),
+  transactionId: text().notNull().references(() => creditTransactionTable.id),
+  // Stripe identifiers
+  paymentIntentId: text({
+    length: 255,
+  }).notNull(),
+  stripeInvoiceId: text({
+    length: 255,
+  }),
+  stripeChargeId: text({
+    length: 255,
+  }),
+  // Receipt data
+  receiptNumber: text({
+    length: 100,
+  }).notNull(),
+  amount: integer().notNull(), // Amount in cents
+  currency: text({
+    length: 3,
+  }).default('usd').notNull(),
+  // Tax information
+  taxAmount: integer().default(0).notNull(),
+  taxRate: text({
+    length: 10,
+  }),
+  // Payment method info
+  paymentMethod: text({
+    length: 50,
+  }).notNull(),
+  cardLast4: text({
+    length: 4,
+  }),
+  cardBrand: text({
+    length: 20,
+  }),
+  // Receipt URLs and delivery
+  pdfUrl: text({
+    length: 500,
+  }),
+  htmlContent: text(), // Store HTML receipt content
+  downloadToken: text({
+    length: 255,
+  }).notNull(), // Secure token for downloads
+  emailSent: integer({
+    mode: "timestamp",
+  }),
+  emailDelivered: integer({
+    mode: "timestamp",
+  }),
+  downloadCount: integer().default(0).notNull(),
+  lastDownloaded: integer({
+    mode: "timestamp",
+  }),
+}, (table) => ([
+  index('receipt_user_id_idx').on(table.userId),
+  index('receipt_transaction_id_idx').on(table.transactionId),
+  index('receipt_payment_intent_id_idx').on(table.paymentIntentId),
+  index('receipt_number_idx').on(table.receiptNumber),
+  index('receipt_download_token_idx').on(table.downloadToken),
 ]));
 
 // System-defined roles - these are always available
@@ -326,11 +402,12 @@ export const teamInvitationRelations = relations(teamInvitationTable, ({ one }) 
   }),
 }));
 
-export const creditTransactionRelations = relations(creditTransactionTable, ({ one }) => ({
+export const creditTransactionRelations = relations(creditTransactionTable, ({ one, many }) => ({
   user: one(userTable, {
     fields: [creditTransactionTable.userId],
     references: [userTable.id],
   }),
+  receipts: many(receiptTable),
 }));
 
 export const purchasedItemsRelations = relations(purchasedItemsTable, ({ one }) => ({
@@ -340,10 +417,22 @@ export const purchasedItemsRelations = relations(purchasedItemsTable, ({ one }) 
   }),
 }));
 
+export const receiptRelations = relations(receiptTable, ({ one }) => ({
+  user: one(userTable, {
+    fields: [receiptTable.userId],
+    references: [userTable.id],
+  }),
+  transaction: one(creditTransactionTable, {
+    fields: [receiptTable.transactionId],
+    references: [creditTransactionTable.id],
+  }),
+}));
+
 export const userRelations = relations(userTable, ({ many }) => ({
   passkeys: many(passKeyCredentialTable),
   creditTransactions: many(creditTransactionTable),
   purchasedItems: many(purchasedItemsTable),
+  receipts: many(receiptTable),
   teamMemberships: many(teamMembershipTable),
 }));
 

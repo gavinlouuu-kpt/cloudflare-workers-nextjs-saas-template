@@ -81,14 +81,18 @@ export async function createPaymentIntent({ packageId }: CreatePaymentIntentInpu
       const paymentIntent = await getStripe().paymentIntents.create({
         amount: creditPackage.price * 100,
         currency: 'usd',
+        description: `${creditPackage.credits} Credits - TickNow Credit Package`, // This shows on receipts
+        statement_descriptor: 'TICKNOW CREDITS', // Shows on credit card statements
         automatic_payment_methods: {
           enabled: true,
           allow_redirects: 'never',
         },
+        receipt_email: session.user.email || undefined, // Enable automatic Stripe receipts
         metadata: {
           userId: session.user.id,
           packageId: creditPackage.id,
           credits: creditPackage.credits.toString(),
+          product_description: `${creditPackage.credits} Credits for TickNow Platform`,
         },
       });
 
@@ -129,17 +133,8 @@ export async function confirmPayment({ packageId, paymentIntentId }: PurchaseCre
         throw new Error("Invalid payment intent");
       }
 
-      // Add credits and log transaction
-      await updateUserCredits(session.user.id, creditPackage.credits);
-      await logTransaction({
-        userId: session.user.id,
-        amount: creditPackage.credits,
-        description: `Purchased ${creditPackage.credits} credits`,
-        type: CREDIT_TRANSACTION_TYPE.PURCHASE,
-        expirationDate: new Date(Date.now() + ms(`${CREDITS_EXPIRATION_YEARS} years`)),
-        paymentIntentId: paymentIntent?.id
-      });
-
+      // Note: Credits and transaction logging are handled by the webhook
+      // This ensures no duplicate transactions and proper receipt generation
       return { success: true };
     } catch (error) {
       console.error("Purchase error:", error);

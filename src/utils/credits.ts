@@ -109,7 +109,7 @@ export async function logTransaction({
   paymentIntentId?: string;
 }) {
   const db = getDB();
-  await db.insert(creditTransactionTable).values({
+  const [transaction] = await db.insert(creditTransactionTable).values({
     userId,
     amount,
     remainingAmount: amount, // Initialize remaining amount to be the same as amount
@@ -117,7 +117,9 @@ export async function logTransaction({
     description,
     expirationDate,
     paymentIntentId
-  });
+  }).returning({ id: creditTransactionTable.id });
+
+  return transaction;
 }
 
 export async function addFreeMonthlyCreditsIfNeeded(session: KVSession): Promise<number> {
@@ -284,7 +286,7 @@ export async function getCreditTransactions({
       expirationDateProcessedAt: false,
       remainingAmount: false,
       userId: false,
-    }
+    },
   });
 
   const total = await db

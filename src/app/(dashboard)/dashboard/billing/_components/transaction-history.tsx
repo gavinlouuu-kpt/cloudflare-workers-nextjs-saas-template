@@ -13,15 +13,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
 import { format, isPast } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useTransactionStore } from "@/state/transaction";
+import { toast } from "sonner";
 
 type TransactionData = Awaited<ReturnType<typeof getTransactions>>
 
 function isTransactionExpired(transaction: TransactionData["transactions"][number]): boolean {
   return transaction.expirationDate ? isPast(new Date(transaction.expirationDate)) : false;
+}
+
+function openStripeReceipt(receiptUrl: string) {
+  window.open(receiptUrl, '_blank', 'noopener,noreferrer');
+  toast.success("Opening receipt in new tab");
 }
 
 export function TransactionHistory() {
@@ -81,6 +87,7 @@ export function TransactionHistory() {
                   <TableHead>Type</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Description</TableHead>
+                  <TableHead>Receipt</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -119,10 +126,22 @@ export function TransactionHistory() {
                         </Badge>
                       )}
                     </TableCell>
+                    <TableCell>
+                      {transaction.type === "PURCHASE" && transaction.receiptUrl && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openStripeReceipt(transaction.receiptUrl!)}
+                          title="View Receipt"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">No transactions found</TableCell>
+                    <TableCell colSpan={5} className="h-24 text-center">No transactions found</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -173,6 +192,19 @@ export function TransactionHistory() {
                   {isTransactionExpired(transaction) ? "Expired: " : "Expires: "}
                   {format(new Date(transaction.expirationDate), "MMM d, yyyy")}
                 </Badge>
+              )}
+              {transaction.type === "PURCHASE" && transaction.receiptUrl && (
+                <div className="mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openStripeReceipt(transaction.receiptUrl!)}
+                    className="text-xs"
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    View Receipt
+                  </Button>
+                </div>
               )}
             </div>
           )) : (

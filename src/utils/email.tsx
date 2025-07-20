@@ -273,3 +273,38 @@ export async function sendTeamInvitationEmail({
     });
   }
 }
+
+export async function sendReceiptEmail({
+  to,
+  subject,
+  htmlContent,
+  tags = [],
+}: {
+  to: string;
+  subject: string;
+  htmlContent: string;
+  tags?: string[];
+}) {
+  const provider = await getEmailProvider();
+
+  if (!provider && isProd) {
+    console.warn("No email provider configured - skipping receipt email send for testing");
+    return;
+  }
+
+  if (provider === "resend") {
+    await sendResendEmail({
+      to: [to],
+      subject,
+      html: htmlContent,
+      tags: [{ name: "type", value: "receipt" }, ...tags.map(tag => ({ name: tag, value: tag }))],
+    });
+  } else {
+    await sendBrevoEmail({
+      to: [{ email: to }],
+      subject,
+      htmlContent,
+      tags: ["receipt", ...tags],
+    });
+  }
+}
