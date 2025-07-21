@@ -75,6 +75,11 @@ Have a look at the [project plan](./cursor-docs/project-plan.md) to get an overv
   - 📦 Credit Package Management
   - 💸 Pay-as-you-go Model
   - 📈 Usage Analytics
+  - 🧾 Automatic Receipt System
+    - 📧 Stripe-powered Receipt Emails
+    - 🔗 Receipt URLs in Dashboard
+    - 💼 Professional Receipt Formatting
+    - 🔄 Webhook-based Credit Fulfillment
 - 👑 Admin Dashboard
   - 👥 User Management
 - ✨ Validations with Zod and React Hook Form
@@ -132,6 +137,79 @@ Have a look at the [project plan](./cursor-docs/project-plan.md) to get an overv
 5. `pnpm dev`
 6.  Open http://localhost:3000
 
+## Stripe Configuration & Webhook Setup
+
+### Required Environment Variables
+
+#### For Local Development:
+Add these to your `.dev.vars` file:
+```bash
+# Stripe Configuration
+STRIPE_SECRET_KEY=sk_test_... # Stripe secret key from dashboard
+STRIPE_WEBHOOK_SECRET=whsec_... # From Stripe CLI (see setup below)
+
+# Other required vars for billing
+STRIPE_PUBLISHABLE_KEY=pk_test_... # Stripe publishable key
+```
+
+#### For Production:
+Set these as Cloudflare Worker secrets:
+```bash
+# Stripe Configuration (Production)
+STRIPE_SECRET_KEY=sk_live_... # Live Stripe secret key
+STRIPE_WEBHOOK_SECRET=whsec_... # From Stripe dashboard webhook endpoint
+STRIPE_PUBLISHABLE_KEY=pk_live_... # Live publishable key
+```
+
+### Local Development Webhook Setup
+
+To test payments and receipts locally, you need to forward Stripe webhooks:
+
+1. **Install Stripe CLI** (if not already installed):
+   ```bash
+   # macOS
+   brew install stripe/stripe-cli/stripe
+   
+   # Or download from: https://stripe.com/docs/stripe-cli
+   ```
+
+2. **Login to Stripe**:
+   ```bash
+   stripe login
+   ```
+
+3. **Forward webhooks to local dev server**:
+   ```bash
+   stripe listen --forward-to localhost:3000/api/webhooks/stripe
+   ```
+
+4. **Copy the webhook secret** from the CLI output (starts with `whsec_...`) and add it to your `.dev.vars`:
+   ```bash
+   STRIPE_WEBHOOK_SECRET=whsec_4e7c3814cb20e157403aceaa0622e9ff4abeb9b8b2013c91e409fc825c63cd1f
+   ```
+
+5. **Restart your dev server** after updating `.dev.vars`
+
+### Production Webhook Setup
+
+1. **Create webhook endpoint** in Stripe Dashboard:
+   - Go to: Stripe Dashboard → Developers → Webhooks
+   - Add endpoint: `https://yourdomain.com/api/webhooks/stripe`
+   - Select events: `payment_intent.succeeded`, `payment_intent.payment_failed`
+
+2. **Copy webhook secret** from the newly created endpoint and set as Cloudflare Worker secret:
+   ```bash
+   wrangler secret put STRIPE_WEBHOOK_SECRET
+   # Paste the webhook secret when prompted
+   ```
+
+### How It Works
+
+- **Payment Processing**: Frontend creates payment intent → User pays → Stripe confirms payment
+- **Credit Fulfillment**: Webhook receives `payment_intent.succeeded` → Adds credits to user account → Stores Stripe receipt URL
+- **Receipt Delivery**: Stripe automatically emails receipt to customer (no custom code needed)
+- **Transaction Tracking**: All payments logged in database with receipt URLs for dashboard access
+
 ## Changes to wrangler.jsonc
 
 After making a change to wrangler.jsonc, you need to run `pnpm cf-typegen` to generate the new types.
@@ -149,8 +227,11 @@ After making a change to wrangler.jsonc, you need to run `pnpm cf-typegen` to ge
 2. Set either `RESEND_API_KEY` or `BREVO_API_KEY` as a secret in your Cloudflare Worker depending on which email service you want to use.
 3. Create a Turnstile catcha in your Cloudflare account, and set the `NEXT_PUBLIC_TURNSTILE_SITE_KEY` as a Github Actions variable.
 4. Set `TURNSTILE_SECRET_KEY` as a secret in your Cloudflare Worker.
-5. Update the `wrangler.jsonc` file with the new database and KV namespaces, env variables and account id. Search for "cloudflare-workers-nextjs-saas-template" recursively in the whole repository and change that to the name of your project. Don't forget that the name you choose at the top of the wrangler.jsonc should be the same as `services->[0]->service` in the same file.
-6. Go to https://dash.cloudflare.com/profile/api-tokens and click on "Use template" next to "Edit Cloudflare Workers". On the next, page add the following permissions in addition to the ones from the template:
+5. **Configure Stripe for production**:
+   - Set `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, and `STRIPE_WEBHOOK_SECRET` as Cloudflare Worker secrets
+   - Create production webhook endpoint in Stripe Dashboard pointing to your domain
+6. Update the `wrangler.jsonc` file with the new database and KV namespaces, env variables and account id. Search for "cloudflare-workers-nextjs-saas-template" recursively in the whole repository and change that to the name of your project. Don't forget that the name you choose at the top of the wrangler.jsonc should be the same as `services->[0]->service` in the same file.
+7. Go to https://dash.cloudflare.com/profile/api-tokens and click on "Use template" next to "Edit Cloudflare Workers". On the next, page add the following permissions in addition to the ones from the template:
     - Account:AI Gateway:Edit
     - Account:Workers AI:Edit
     - Account:Workers AI:Read
@@ -160,10 +241,10 @@ After making a change to wrangler.jsonc, you need to run `pnpm cf-typegen` to ge
     - Account:Cloudflare Images:Edit
     - Account:Workers KV Storage:Edit
     - Zone:Cache Purge:Purge
-7. Add the API token to the Github repository secrets as `CLOUDFLARE_API_TOKEN`
-8. Add the Cloudflare account id to the Github repository variables as `CLOUDFLARE_ACCOUNT_ID`
-9. Optional: If you want clear the CDN cache on deploy, add `CLOUDFLARE_ZONE_ID` to the Github repository variables for the zone id of your domain. This is the zone id of your domain, not the account id.
-10. Push to the main branch
+8. Add the API token to the Github repository secrets as `CLOUDFLARE_API_TOKEN`
+9. Add the Cloudflare account id to the Github repository variables as `CLOUDFLARE_ACCOUNT_ID`
+10. Optional: If you want clear the CDN cache on deploy, add `CLOUDFLARE_ZONE_ID` to the Github repository variables for the zone id of your domain. This is the zone id of your domain, not the account id.
+11. Push to the main branch
 
 ## Email templates
 If you want to preview and edit the email templates you can:

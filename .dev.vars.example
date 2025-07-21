@@ -1,2 +1,6 @@
 # Load .env.development* files when running `wrangler dev`
 NEXTJS_ENV=development
+
+# Stripe Configuration (Development)
+STRIPE_SECRET_KEY=sk_test_51... # Your Stripe test secret key
+STRIPE_WEBHOOK_SECRET=whsec_... # From Stripe CLI when running `stripe listen`
