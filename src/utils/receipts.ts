@@ -1,7 +1,7 @@
 import "server-only";
 import { getDB } from "@/db";
 import { receiptTable, creditTransactionTable, userTable } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getStripe } from "@/lib/stripe";
 import { render } from "@react-email/render";
 import PaymentReceipt from "@/react-email/payment-receipt";
@@ -43,7 +43,6 @@ export interface CreateReceiptOptions {
   paymentIntentId: string;
   userId: string;
   transactionId: string;
-  generatePdf?: boolean;
   sendEmail?: boolean;
 }
 
@@ -70,7 +69,6 @@ export async function createReceiptFromPayment({
   paymentIntentId,
   userId,
   transactionId,
-  generatePdf = true,
   sendEmail = true,
 }: CreateReceiptOptions): Promise<string> {
   const db = getDB();
@@ -110,8 +108,8 @@ export async function createReceiptFromPayment({
     }
 
     // Extract payment method details from the latest charge
-    const charge = paymentIntent.latest_charge as any;
-    let paymentMethod: any = null;
+    const charge = paymentIntent.latest_charge as { payment_method?: string; id?: string };
+    let paymentMethod: { type?: string; card?: { last4?: string; brand?: string } } | null = null;
     
     // Get payment method separately if we have a charge with payment method ID
     if (charge?.payment_method) {
@@ -121,7 +119,7 @@ export async function createReceiptFromPayment({
           paymentMethod = await stripe.paymentMethods.retrieve(charge.payment_method);
         } else {
           // If payment_method is already expanded
-          paymentMethod = charge.payment_method;
+          paymentMethod = charge.payment_method as { type?: string; card?: { last4?: string; brand?: string } };
         }
       } catch (pmError) {
         console.warn('Could not retrieve payment method details:', pmError);
@@ -298,7 +296,7 @@ export async function getUserReceipts(userId: string, page = 1, limit = 10) {
  * Generate receipt PDF using puppeteer or similar (placeholder for now)
  * This would typically use a service like Puppeteer or a PDF generation API
  */
-export async function generateReceiptPDF(receiptId: string): Promise<string | null> {
+export async function generateReceiptPDF(): Promise<string | null> {
   // TODO: Implement PDF generation
   // This would typically:
   // 1. Get the receipt HTML content

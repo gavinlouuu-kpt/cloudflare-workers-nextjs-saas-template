@@ -3,14 +3,10 @@
 import { requireVerifiedEmail } from "@/utils/auth";
 import {
   getCreditTransactions,
-  updateUserCredits,
-  logTransaction,
   getCreditPackage,
 } from "@/utils/credits";
-import { CREDIT_TRANSACTION_TYPE } from "@/db/schema";
 import { getStripe } from "@/lib/stripe";
-import { MAX_TRANSACTIONS_PER_PAGE, CREDITS_EXPIRATION_YEARS } from "@/constants";
-import ms from "ms";
+import { MAX_TRANSACTIONS_PER_PAGE } from "@/constants";
 import { withRateLimit, RATE_LIMITS } from "@/utils/with-rate-limit";
 
 // Action types

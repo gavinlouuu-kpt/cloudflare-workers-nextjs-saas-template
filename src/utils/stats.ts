@@ -33,14 +33,36 @@ export async function getGithubStars() {
 
   return withKVCache(
     async () => {
-      const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
-      if (!response.ok) return null;
+      try {
+        // Create an AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-      const data = (await response.json()) as {
-        stargazers_count: number;
-      };
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent': 'NextJS-SaaS-Template',
+            'Accept': 'application/vnd.github.v3+json',
+          },
+        });
 
-      return data.stargazers_count;
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          console.warn(`GitHub API returned ${response.status} for ${owner}/${repo}`);
+          return null;
+        }
+
+        const data = (await response.json()) as {
+          stargazers_count: number;
+        };
+
+        return data.stargazers_count;
+      } catch (error) {
+        // Log the error for debugging but don't throw to prevent app crashes
+        console.warn('Failed to fetch GitHub stars:', error);
+        return null;
+      }
     },
     {
       key: `${CACHE_KEYS.GITHUB_STARS}:${owner}/${repo}`,
