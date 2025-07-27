@@ -147,3 +147,116 @@ export async function confirmPayment({ packageId, paymentIntentId }: PurchaseCre
     }
   }, RATE_LIMITS.PURCHASE);
 }
+
+// New action to get receipt information
+export async function getReceiptInfo(paymentIntentId: string) {
+  return withRateLimit(async () => {
+    const session = await requireVerifiedEmail();
+    if (!session) {
+      throw new Error("Unauthorized");
+    }
+
+    try {
+      // Import error handling utilities
+      const { ReceiptValidator, ReceiptErrorHandler, ReceiptRateLimit } = await import("@/utils/receipt-handler");
+
+      // Validate payment intent ID format
+      if (!ReceiptValidator.isValidPaymentIntentId(paymentIntentId)) {
+        throw new Error("Invalid payment intent ID format");
+      }
+
+      // Check rate limiting
+      if (!ReceiptRateLimit.canMakeRequest(session.user.id)) {
+        throw new Error("Too many receipt requests. Please try again later.");
+      }
+
+      // Record the request
+      ReceiptRateLimit.recordRequest(session.user.id);
+
+      // Verify the transaction belongs to the current user
+      const transaction = await getCreditTransactions({
+        userId: session.user.id,
+        page: 1,
+        limit: 1000, // Get all transactions to find the matching one
+      });
+
+      const userTransaction = transaction.transactions.find(
+        t => t.paymentIntentId === paymentIntentId
+      );
+
+      if (!userTransaction) {
+        throw new Error("Transaction not found or unauthorized");
+      }
+
+      // Retrieve payment intent from Stripe
+      const paymentIntent = await getStripe().paymentIntents.retrieve(paymentIntentId, {
+        expand: ['charges']
+      });
+
+      if (paymentIntent.status !== 'succeeded') {
+        throw new Error("Payment not completed");
+      }
+
+      // Handle charge data more robustly
+      let chargeData = null;
+      
+      // First, try to get from expanded charges
+      if (paymentIntent.charges && paymentIntent.charges.data && paymentIntent.charges.data.length > 0) {
+        chargeData = paymentIntent.charges.data[0];
+      } 
+      // Fallback to latest_charge if available
+      else if (paymentIntent.latest_charge && typeof paymentIntent.latest_charge === 'object') {
+        chargeData = paymentIntent.latest_charge;
+      }
+      // If latest_charge is just an ID, try to retrieve it
+      else if (paymentIntent.latest_charge && typeof paymentIntent.latest_charge === 'string') {
+        try {
+          chargeData = await getStripe().charges.retrieve(paymentIntent.latest_charge);
+        } catch (error) {
+          console.error("Failed to retrieve charge:", error);
+        }
+      }
+
+      // Check if we have charge data
+      if (!chargeData) {
+        // In test mode, some PaymentIntents might not have full charge data
+        const isTestMode = paymentIntentId.startsWith('pi_test_') || process.env.NODE_ENV === 'development';
+        
+        if (isTestMode) {
+          throw new Error("Receipt not available in test mode. This transaction was processed with test data.");
+        } else {
+          throw new Error("Receipt information is not available for this transaction.");
+        }
+      }
+
+      // Extract receipt information
+      const rawReceiptInfo = {
+        receiptUrl: ReceiptValidator.sanitizeReceiptUrl(chargeData.receipt_url),
+        receiptNumber: chargeData.receipt_number || null,
+        amount: chargeData.amount || paymentIntent.amount,
+        currency: chargeData.currency || paymentIntent.currency,
+        created: chargeData.created || Math.floor(Date.now() / 1000),
+        description: chargeData.description || paymentIntent.description || userTransaction.description,
+        paymentMethodDetails: {
+          type: chargeData.payment_method_details?.type || 'card',
+          last4: chargeData.payment_method_details?.card?.last4 || '****',
+          brand: chargeData.payment_method_details?.card?.brand || 'unknown',
+        },
+        billingDetails: chargeData.billing_details || null,
+      };
+
+      // Apply security masking for sensitive data
+      const receiptInfo = ReceiptValidator.maskSensitiveData(rawReceiptInfo);
+
+      return { receiptInfo };
+    } catch (error) {
+      console.error("Receipt retrieval error:", error);
+      
+      // Use our error handler to provide better error messages
+      const { ReceiptErrorHandler } = await import("@/utils/receipt-handler");
+      const handledError = ReceiptErrorHandler.handleError(error);
+      
+      throw new Error(handledError.userMessage);
+    }
+  }, RATE_LIMITS.PURCHASE);
+}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getTransactions } from "@/actions/credits.action";
+import { getTransactions, getReceiptInfo } from "@/actions/credits.action";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -13,15 +13,283 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Receipt, ExternalLink, CreditCard, Mail } from "lucide-react";
 import { format, isPast } from "date-fns";
 import { Badge } from "@/components/ui/badge";
 import { useTransactionStore } from "@/state/transaction";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { Separator } from "@/components/ui/separator";
 
 type TransactionData = Awaited<ReturnType<typeof getTransactions>>
+type ReceiptData = Awaited<ReturnType<typeof getReceiptInfo>>
 
 function isTransactionExpired(transaction: TransactionData["transactions"][number]): boolean {
   return transaction.expirationDate ? isPast(new Date(transaction.expirationDate)) : false;
+}
+
+// Receipt Modal Component
+function ReceiptModal({ 
+  paymentIntentId, 
+  transactionDescription 
+}: { 
+  paymentIntentId: string;
+  transactionDescription: string;
+}) {
+  const [receiptData, setReceiptData] = useState<ReceiptData["receiptInfo"] | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const MAX_RETRIES = 3;
+
+  const handleViewReceipt = async (isRetry = false) => {
+    if (!isRetry) {
+      setError(null);
+      setRetryCount(0);
+    }
+
+    setIsLoading(true);
+    try {
+      const result = await getReceiptInfo(paymentIntentId);
+      setReceiptData(result.receiptInfo);
+      setIsOpen(true);
+      setError(null);
+    } catch (error) {
+      console.error("Failed to fetch receipt:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to load receipt information";
+      setError(errorMessage);
+      
+      // Show different toast messages based on retry state
+      if (isRetry) {
+        toast.error(`Retry ${retryCount + 1} failed: ${errorMessage}`);
+      } else {
+        toast.error(errorMessage);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRetry = () => {
+    if (retryCount < MAX_RETRIES) {
+      setRetryCount(prev => prev + 1);
+      handleViewReceipt(true);
+    }
+  };
+
+  const formatCurrency = (amount: number, currency: string) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: currency.toUpperCase(),
+    }).format(amount / 100); // Stripe amounts are in cents
+  };
+
+  const formatCardBrand = (brand?: string) => {
+    if (!brand) return 'Card';
+    return brand.charAt(0).toUpperCase() + brand.slice(1);
+  };
+
+  // Determine if we should show retry button based on error message
+  const shouldShowRetry = error && (
+    error.includes('network') || 
+    error.includes('connection') || 
+    error.includes('busy') ||
+    error.includes('try again')
+  ) && retryCount < MAX_RETRIES;
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleViewReceipt}
+          disabled={isLoading}
+          className="h-8 px-2 text-xs"
+        >
+          <Receipt className="h-3 w-3 mr-1" />
+          {isLoading ? "Loading..." : "Receipt"}
+        </Button>
+      </DialogTrigger>
+      
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Receipt className="h-5 w-5" />
+            Payment Receipt
+          </DialogTitle>
+          <DialogDescription>
+            Receipt details for your purchase
+          </DialogDescription>
+        </DialogHeader>
+        
+        {/* Loading State */}
+        {isLoading && (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-3 text-sm text-muted-foreground">Loading receipt...</span>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !isLoading && (
+          <div className="space-y-4 py-4">
+            <div className="rounded-md bg-destructive/15 p-3">
+              <div className="flex">
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-destructive">
+                    Unable to Load Receipt
+                  </h3>
+                  <div className="mt-2 text-sm text-destructive/80">
+                    {error}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              {shouldShowRetry && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRetry}
+                  disabled={isLoading}
+                  className="flex-1"
+                >
+                  Retry ({MAX_RETRIES - retryCount} left)
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Success State - Receipt Data */}
+        {receiptData && !isLoading && !error && (
+          <div className="space-y-4">
+            {/* Transaction Details */}
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Amount</span>
+                <span className="font-medium">
+                  {formatCurrency(receiptData.amount, receiptData.currency)}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Date</span>
+                <span className="text-sm">
+                  {format(new Date(receiptData.created * 1000), "MMM d, yyyy 'at' h:mm a")}
+                </span>
+              </div>
+              
+              {receiptData.description && (
+                <div className="flex justify-between items-start">
+                  <span className="text-sm text-muted-foreground">Description</span>
+                  <span className="text-sm text-right max-w-[200px]">
+                    {receiptData.description}
+                  </span>
+                </div>
+              )}
+              
+              {receiptData.receiptNumber && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Receipt #</span>
+                  <span className="text-sm font-mono">
+                    {receiptData.receiptNumber}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Payment Method */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Payment Method
+              </h4>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Type</span>
+                <span className="text-sm">
+                  {receiptData.paymentMethodDetails.type === 'card' 
+                    ? `${formatCardBrand(receiptData.paymentMethodDetails.brand)} •••• ${receiptData.paymentMethodDetails.last4}`
+                    : receiptData.paymentMethodDetails.type
+                  }
+                </span>
+              </div>
+            </div>
+
+            {/* Billing Details */}
+            {receiptData.billingDetails && (receiptData.billingDetails.name || receiptData.billingDetails.email) && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium flex items-center gap-2">
+                    <Mail className="h-4 w-4" />
+                    Billing Details
+                  </h4>
+                  
+                  {receiptData.billingDetails.name && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Name</span>
+                      <span className="text-sm">{receiptData.billingDetails.name}</span>
+                    </div>
+                  )}
+                  
+                  {receiptData.billingDetails.email && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Email</span>
+                      <span className="text-sm">{receiptData.billingDetails.email}</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-2 pt-4">
+              {receiptData.receiptUrl && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => window.open(receiptData.receiptUrl!, '_blank')}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View Full Receipt
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function TransactionHistory() {
@@ -81,6 +349,7 @@ export function TransactionHistory() {
                   <TableHead>Type</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Description</TableHead>
+                  <TableHead className="w-[100px]">Receipt</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -105,24 +374,26 @@ export function TransactionHistory() {
                       {Math.abs(transaction.amount)}
                     </TableCell>
                     <TableCell>
-                      {transaction.description}
-                      {transaction.type !== "USAGE" && transaction.expirationDate && (
-                        <Badge
-                          variant="secondary"
-                          className={`mt-1 ml-3 font-normal text-[0.75rem] leading-[1rem] ${isTransactionExpired(transaction)
-                            ? "bg-orange-500 hover:bg-orange-600 text-white"
-                            : "bg-muted"
-                            }`}
-                        >
-                          {isTransactionExpired(transaction) ? "Expired: " : "Expires: "}
-                          {format(new Date(transaction.expirationDate), "MMM d, yyyy")}
-                        </Badge>
+                      {transaction.paymentIntentId && transaction.type === "PURCHASE" ? (
+                        transaction.paymentIntentId.startsWith('pi_test_') ? (
+                          <div className="flex items-center gap-1">
+                            <Receipt className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs text-muted-foreground">Test Mode</span>
+                          </div>
+                        ) : (
+                          <ReceiptModal 
+                            paymentIntentId={transaction.paymentIntentId}
+                            transactionDescription={transaction.description}
+                          />
+                        )
+                      ) : (
+                        <span className="text-xs text-muted-foreground">N/A</span>
                       )}
                     </TableCell>
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">No transactions found</TableCell>
+                    <TableCell colSpan={5} className="h-24 text-center">No transactions found</TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -162,6 +433,24 @@ export function TransactionHistory() {
                   {Math.abs(transaction.amount)}
                 </span>
               </div>
+              
+              {/* Receipt button for mobile */}
+              {transaction.paymentIntentId && transaction.type === "PURCHASE" && (
+                <div className="flex justify-end pt-2">
+                  {transaction.paymentIntentId.startsWith('pi_test_') ? (
+                    <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                      <Receipt className="h-3 w-3" />
+                      Test Mode
+                    </div>
+                  ) : (
+                    <ReceiptModal 
+                      paymentIntentId={transaction.paymentIntentId}
+                      transactionDescription={transaction.description}
+                    />
+                  )}
+                </div>
+              )}
+              
               {transaction.type !== "USAGE" && transaction.expirationDate && (
                 <Badge
                   variant="secondary"
