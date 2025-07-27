@@ -112,7 +112,7 @@ function ReceiptModal({
         <Button
           variant="ghost"
           size="sm"
-          onClick={handleViewReceipt}
+          onClick={() => handleViewReceipt()}
           disabled={isLoading}
           className="h-8 px-2 text-xs"
         >
@@ -121,7 +121,7 @@ function ReceiptModal({
         </Button>
       </DialogTrigger>
       
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
@@ -181,59 +181,71 @@ function ReceiptModal({
 
         {/* Success State - Receipt Data */}
         {receiptData && !isLoading && !error && (
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Receipt Header */}
+            <div className="text-center space-y-2 pb-4 border-b">
+              <h3 className="text-lg font-semibold">
+                {formatCurrency(receiptData.amount, receiptData.currency)}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {format(new Date(receiptData.created * 1000), "MMMM d, yyyy 'at' h:mm a")}
+              </p>
+              {receiptData.receiptNumber && (
+                <p className="text-xs text-muted-foreground font-mono">
+                  Receipt #{receiptData.receiptNumber}
+                </p>
+              )}
+            </div>
+
             {/* Transaction Details */}
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Amount</span>
-                <span className="font-medium">
-                  {formatCurrency(receiptData.amount, receiptData.currency)}
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Date</span>
-                <span className="text-sm">
-                  {format(new Date(receiptData.created * 1000), "MMM d, yyyy 'at' h:mm a")}
-                </span>
-              </div>
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                Transaction Details
+              </h4>
               
               {receiptData.description && (
-                <div className="flex justify-between items-start">
+                <div className="space-y-1">
                   <span className="text-sm text-muted-foreground">Description</span>
-                  <span className="text-sm text-right max-w-[200px]">
+                  <p className="text-sm leading-relaxed">
                     {receiptData.description}
-                  </span>
+                  </p>
                 </div>
               )}
               
-              {receiptData.receiptNumber && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Receipt #</span>
-                  <span className="text-sm font-mono">
-                    {receiptData.receiptNumber}
-                  </span>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-1">
+                  <span className="text-muted-foreground">Amount</span>
+                  <p className="font-medium">
+                    {formatCurrency(receiptData.amount, receiptData.currency)}
+                  </p>
                 </div>
-              )}
+                
+                <div className="space-y-1">
+                  <span className="text-muted-foreground">Date</span>
+                  <p>
+                    {format(new Date(receiptData.created * 1000), "MMM d, yyyy")}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <Separator />
 
             {/* Payment Method */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium flex items-center gap-2">
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
                 Payment Method
               </h4>
               
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Type</span>
-                <span className="text-sm">
+              <div className="space-y-1">
+                <span className="text-sm text-muted-foreground">Card</span>
+                <p className="text-sm">
                   {receiptData.paymentMethodDetails.type === 'card' 
                     ? `${formatCardBrand(receiptData.paymentMethodDetails.brand)} •••• ${receiptData.paymentMethodDetails.last4}`
                     : receiptData.paymentMethodDetails.type
                   }
-                </span>
+                </p>
               </div>
             </div>
 
@@ -241,31 +253,33 @@ function ReceiptModal({
             {receiptData.billingDetails && (receiptData.billingDetails.name || receiptData.billingDetails.email) && (
               <>
                 <Separator />
-                <div className="space-y-2">
-                  <h4 className="text-sm font-medium flex items-center gap-2">
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-2">
                     <Mail className="h-4 w-4" />
-                    Billing Details
+                    Billing Information
                   </h4>
                   
-                  {receiptData.billingDetails.name && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Name</span>
-                      <span className="text-sm">{receiptData.billingDetails.name}</span>
-                    </div>
-                  )}
-                  
-                  {receiptData.billingDetails.email && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Email</span>
-                      <span className="text-sm">{receiptData.billingDetails.email}</span>
-                    </div>
-                  )}
+                  <div className="space-y-3">
+                    {receiptData.billingDetails.name && (
+                      <div className="space-y-1">
+                        <span className="text-sm text-muted-foreground">Name</span>
+                        <p className="text-sm">{receiptData.billingDetails.name}</p>
+                      </div>
+                    )}
+                    
+                    {receiptData.billingDetails.email && (
+                      <div className="space-y-1">
+                        <span className="text-sm text-muted-foreground">Email</span>
+                        <p className="text-sm">{receiptData.billingDetails.email}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </>
             )}
 
             {/* Action Buttons */}
-            <div className="flex gap-2 pt-4">
+            <div className="flex gap-2 pt-4 border-t">
               {receiptData.receiptUrl && (
                 <Button
                   variant="default"
@@ -372,6 +386,9 @@ export function TransactionHistory() {
                     >
                       {transaction.type === "USAGE" ? "-" : "+"}
                       {Math.abs(transaction.amount)}
+                    </TableCell>
+                    <TableCell>
+                      {transaction.description || "No description"}
                     </TableCell>
                     <TableCell>
                       {transaction.paymentIntentId && transaction.type === "PURCHASE" ? (
