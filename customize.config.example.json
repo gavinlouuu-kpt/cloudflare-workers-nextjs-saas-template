@@ -1,0 +1,43 @@
+{
+  "project": {
+    "name": "awesome-saas",
+    "displayName": "Awesome SaaS",
+    "description": "An amazing SaaS application that solves real problems for businesses.",
+    "version": "1.0.0"
+  },
+  "domain": {
+    "production": "https://awesome-saas.com",
+    "development": "http://localhost:3000"
+  },
+  "company": {
+    "name": "Awesome Inc",
+    "legalName": "John Doe",
+    "website": "https://awesome-inc.com"
+  },
+  "contact": {
+    "email": {
+      "from": "no-reply@awesome-saas.com",
+      "fromName": "Awesome SaaS",
+      "replyTo": "support@awesome-saas.com",
+      "support": "support@awesome-saas.com"
+    }
+  },
+  "social": {
+    "github": {
+      "username": "johndoe",
+      "repository": "awesome-saas"
+    },
+    "twitter": {
+      "handle": "@johndoe"
+    }
+  },
+  "cloudflare": {
+    "accountId": "abcd1234567890abcd1234567890abcd",
+    "databaseId": "12345678-1234-1234-1234-123456789012",
+    "kvNamespaceId": "abcdef1234567890abcdef1234567890",
+    "databaseName": "awesome-saas-db"
+  },
+  "seo": {
+    "keywords": ["SaaS", "Business", "Productivity", "Next.js", "Cloudflare"]
+  }
+} 

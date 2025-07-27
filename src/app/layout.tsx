@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   metadataBase: new URL(SITE_URL),
   keywords: ["SaaS", "Next.js", "React", "TypeScript", "Cloudflare Workers", "Edge Computing"],
-  authors: [{ name: "[Your Name]" }],
-  creator: "[Your Name]",
+  authors: [{ name: "[Your Custom Name]" }],
+  creator: "[Your Custom Name]",
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SITE_NAME,
     description: SITE_DESCRIPTION,
-    creator: "@[your-twitter]",
+    creator: "@[your-custom-twitter]",
   },
   robots: {
     index: true,

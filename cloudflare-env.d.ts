@@ -4,13 +4,13 @@
 declare namespace Cloudflare {
 	interface Env {
 		NEXT_INC_CACHE_KV: KVNamespace;
-		EMAIL_FROM: "no-reply@your-domain.com";
-		EMAIL_FROM_NAME: "[Your Company]";
-		EMAIL_REPLY_TO: "support@your-domain.com";
+		EMAIL_FROM: "no-reply@your-custom-domain.com";
+		EMAIL_FROM_NAME: "[Your Custom Company]";
+		EMAIL_REPLY_TO: "support@your-custom-domain.com";
 		NEXTJS_ENV: string;
 		NEXT_CACHE_DO_QUEUE: DurableObjectNamespace /* DOQueueHandler */;
 		NEXT_TAG_CACHE_D1: D1Database;
-		WORKER_SELF_REFERENCE: Fetcher /* your-project-name */;
+		WORKER_SELF_REFERENCE: Fetcher /* your-custom-project-name */;
 		ASSETS: Fetcher;
 	}
 }

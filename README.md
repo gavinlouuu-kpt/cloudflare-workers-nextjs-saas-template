@@ -1,4 +1,4 @@
-# Cloudflare Workers SaaS Template
+# Cloudflare Workers Your Custom SaaS Project
 
 A comprehensive Next.js SaaS template for Cloudflare Workers.
 
@@ -128,12 +128,97 @@ Have a look at the [project plan](./cursor-docs/project-plan.md) to get an overv
 
 After making a change to wrangler.jsonc, you need to run `pnpm cf-typegen` to generate the new types.
 
-## Things to change and customize before deploying to production
-1. Go to `src/constants.ts` and update it with your project details
-2. Update `.cursor/rules/001-main-project-context.mdc` with your project specification so that Cursor AI can give you better suggestions
-3. Update the footer in `src/components/footer.tsx` with your project details and links
-4. Optional: Update the color palette in `src/app/globals.css`
-5. Update the metadata in `src/app/layout.tsx` with your project details
+## Quick Customization
+
+This template includes an automated customization system that replaces all placeholders with your actual project details from a single configuration file.
+
+### Step 1: Create your configuration file
+```bash
+cp customize.config.example.json customize.config.json
+```
+
+### Step 2: Edit the configuration
+Open `customize.config.json` and update it with your project details:
+
+```json
+{
+  "project": {
+    "name": "your-awesome-saas",
+    "displayName": "Your Awesome SaaS",
+    "description": "Your project description here"
+  },
+  "company": {
+    "name": "Your Company",
+    "legalName": "Your Legal Name"
+  },
+  "domain": {
+    "production": "https://yourdomain.com"
+  },
+  "contact": {
+    "email": {
+      "from": "no-reply@yourdomain.com",
+      "support": "support@yourdomain.com"
+    }
+  },
+  "social": {
+    "github": {
+      "username": "yourusername",
+      "repository": "your-repo"
+    },
+    "twitter": {
+      "handle": "@yourtwitter"
+    }
+  },
+  "cloudflare": {
+    "accountId": "your-custom-cloudflare-account-id",
+    "databaseId": "your-custom-database-id",
+    "kvNamespaceId": "your-custom-kv-namespace-id",
+    "databaseName": "your-custom-database-name"
+  }
+}
+```
+
+### Step 3: Preview changes (optional)
+```bash
+pnpm customize:dry-run
+```
+
+### Step 4: Apply customization
+```bash
+pnpm customize
+```
+
+This will automatically update all files in your project with your custom values!
+
+📚 **For detailed customization options, see [CUSTOMIZATION.md](./CUSTOMIZATION.md)**
+
+### Available Commands
+
+```bash
+# Preview what changes will be made (recommended first step)
+pnpm customize:dry-run
+
+# Apply customization to your project
+pnpm customize
+
+# Install dependencies
+pnpm install
+
+# Start development server
+pnpm dev
+
+# Generate Cloudflare types after config changes
+pnpm cf-typegen
+```
+
+### Manual Customization (Advanced)
+
+If you prefer manual customization or need to make additional changes:
+
+1. Update the color palette in `src/app/globals.css`
+2. Customize the landing page components in `src/components/landing/`
+3. Modify the email templates in `src/react-email/`
+4. Update `.cursor/rules/001-main-project-context.mdc` with your project specification
 
 ## Deploying to Cloudflare with Github Actions
 

@@ -21,7 +21,7 @@ export function Hero() {
               </Suspense>
             </div>
             <h1 className="text-4xl font-bold tracking-tight sm:text-6xl bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-              Production-Ready SaaS Template
+              Production-Ready Your Custom SaaS Project
             </h1>
             <p className="mt-6 text-lg leading-8 text-muted-foreground">
               A modern, open-source template for building SaaS applications with Next.js 15,

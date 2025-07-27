@@ -3,13 +3,13 @@ description:
 globs:
 alwaysApply: true
 ---
-# Cloudflare Workers Next.js SaaS Template
+# Cloudflare Workers Next.js Your Custom SaaS Project
 
 This is a comprehensive, production-ready Next.js SaaS template designed to run on Cloudflare Workers with OpenNext. It includes authentication, team management, billing, and other common SaaS features needed to launch a modern web application.
 
-**Live Demo**: [your-domain.com](https://your-domain.com)
+**Live Demo**: [your-custom-domain.com](https://your-custom-domain.com)
 
-**GitHub Repository**: [your-repo](https://github.com/[your-username]/[your-repo])
+**GitHub Repository**: [your-custom-repo](https://github.com/[your-custom-username]/[your-custom-repo])
 
 ## Key Capabilities
 
