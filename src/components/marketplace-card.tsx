@@ -3,9 +3,13 @@
 import * as React from "react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import PurchaseButton from "@/components/purchase-button"
+import { GuestFeatureGate } from "@/components/guest-feature-gate"
 import type { PURCHASABLE_ITEM_TYPE } from "@/db/schema"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Eye } from "lucide-react"
 import { COMPONENTS } from "@/app/(dashboard)/dashboard/marketplace/components-catalog"
+import Link from "next/link"
 
 interface MarketplaceCardProps {
   id: string
@@ -14,11 +18,12 @@ interface MarketplaceCardProps {
   credits: number
   containerClass?: string
   isPurchased: boolean
+  isGuestMode?: boolean
 }
 
 const ITEM_TYPE = 'COMPONENT' as const satisfies keyof typeof PURCHASABLE_ITEM_TYPE;
 
-export function MarketplaceCard({ id, name, description, credits, containerClass, isPurchased }: MarketplaceCardProps) {
+export function MarketplaceCard({ id, name, description, credits, containerClass, isPurchased, isGuestMode = false }: MarketplaceCardProps) {
   const component = COMPONENTS.find(c => c.id === id);
   if (!component) return null;
 
@@ -41,10 +46,28 @@ export function MarketplaceCard({ id, name, description, credits, containerClass
       <CardFooter className="flex justify-between mt-4">
         <div className="text-md lg:text-2xl font-bold">{credits} credits</div>
         {!isPurchased && (
-          <PurchaseButton
-            itemId={id}
-            itemType={ITEM_TYPE}
-          />
+          isGuestMode ? (
+            <GuestFeatureGate 
+              feature="canMakePurchases" 
+              showUpgradeCard={false}
+              fallback={
+                <Button disabled className="opacity-60">
+                  <Eye className="w-4 h-4 mr-2" />
+                  Preview Only
+                </Button>
+              }
+            >
+              <PurchaseButton
+                itemId={id}
+                itemType={ITEM_TYPE}
+              />
+            </GuestFeatureGate>
+          ) : (
+            <PurchaseButton
+              itemId={id}
+              itemType={ITEM_TYPE}
+            />
+          )
         )}
       </CardFooter>
     </Card>

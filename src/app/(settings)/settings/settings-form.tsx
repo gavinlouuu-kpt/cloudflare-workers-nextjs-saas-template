@@ -42,20 +42,24 @@ export function SettingsForm() {
     }
   })
 
-  const { session, isLoading } = useSessionStore();
+  const { session, isLoading, getUserSession } = useSessionStore();
+  const userSession = getUserSession();
   const form = useForm<z.infer<typeof userSettingsSchema>>({
     resolver: zodResolver(userSettingsSchema)
   });
 
   useEffect(() => {
-    form.reset({
-      firstName: session?.user.firstName ?? '',
-      lastName: session?.user.lastName ?? '',
-    });
+    if (userSession) {
+      form.reset({
+        firstName: userSession.user.firstName ?? '',
+        lastName: userSession.user.lastName ?? '',
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session])
+  }, [userSession])
 
-  if (!session || isLoading) {
+  // Only show for authenticated users (not guests)
+  if (!userSession || isLoading) {
     return (
       <Card>
         <CardHeader>
@@ -143,7 +147,7 @@ export function SettingsForm() {
                 <Input
                   type="email"
                   disabled
-                  value={session.user.email ?? ''}
+                  value={userSession.user.email ?? ''}
                 />
               </FormControl>
               <FormDescription>

@@ -55,14 +55,15 @@ type Data = {
 
 // TODO Add a theme switcher
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { session } = useSessionStore();
+  const { session, isGuestSession, getUserSession } = useSessionStore();
   const [formattedTeams, setFormattedTeams] = useState<Data['teams']>([]);
 
   // Map session teams to the format expected by TeamSwitcher
   useEffect(() => {
-    if (session?.teams && session.teams.length > 0) {
+    const userSession = getUserSession();
+    if (userSession?.teams && userSession.teams.length > 0) {
       // Map teams from session to the format expected by TeamSwitcher
-      const teamData = session.teams.map(team => {
+      const teamData = userSession.teams.map(team => {
         return {
           name: team.name,
           // TODO Get the actual logo when we implement team avatars
@@ -73,13 +74,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       });
 
       setFormattedTeams(teamData);
+    } else {
+      setFormattedTeams([]);
     }
-  }, [session]);
+  }, [session, getUserSession]);
+
+  const userSession = getUserSession();
+  const isGuest = isGuestSession();
 
   const data: Data = {
     user: {
-      name: session?.user?.firstName || "User",
-      email: session?.user?.email || "user@example.com",
+      name: isGuest ? "Guest User" : userSession?.user?.firstName || "User",
+      email: isGuest ? "guest@demo.com" : userSession?.user?.email || "user@example.com",
     },
     teams: formattedTeams,
     navMain: [
@@ -90,43 +96,46 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         isActive: true,
       },
       {
-        title: "Teams",
-        url: "/dashboard/teams" as Route,
-        icon: Users,
-      },
-      {
         title: "Marketplace",
         url: "/dashboard/marketplace",
         icon: ShoppingCart,
       },
-      {
-        title: "Billing",
-        url: "/dashboard/billing",
-        icon: CreditCard,
-      },
-      {
-        title: "Settings",
-        url: "/settings",
-        icon: Settings2,
-        items: [
-          {
-            title: "Profile",
-            url: "/settings",
-          },
-          {
-            title: "Security",
-            url: "/settings/security",
-          },
-          {
-            title: "Sessions",
-            url: "/settings/sessions",
-          },
-          {
-            title: "Change Password",
-            url: "/forgot-password",
-          },
-        ],
-      },
+      // Show Teams and Billing only for authenticated users
+      ...(isGuest ? [] : [
+        {
+          title: "Teams",
+          url: "/dashboard/teams" as Route,
+          icon: Users,
+        } as NavMainItem,
+        {
+          title: "Billing",
+          url: "/dashboard/billing" as Route,
+          icon: CreditCard,
+        } as NavMainItem,
+        {
+          title: "Settings",
+          url: "/settings" as Route,
+          icon: Settings2,
+          items: [
+            {
+              title: "Profile",
+              url: "/settings" as Route,
+            },
+            {
+              title: "Security",
+              url: "/settings/security" as Route,
+            },
+            {
+              title: "Sessions",
+              url: "/settings/sessions" as Route,
+            },
+            {
+              title: "Change Password",
+              url: "/forgot-password" as Route,
+            },
+          ],
+        } as NavMainItem,
+      ]),
     ],
     projects: [
       {

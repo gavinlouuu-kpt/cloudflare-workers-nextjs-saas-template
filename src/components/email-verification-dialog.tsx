@@ -51,10 +51,11 @@ export function EmailVerificationDialog() {
   });
 
   // Don't show the dialog if the user is not logged in, if their email is already verified,
-  // or if we're on the verify-email page
+  // or if we're on the verify-email page, or if it's a guest session
   if (
     !session
-    || session.user.emailVerified
+    || ('type' in session && session.type === 'guest') // Skip for guest sessions
+    || (!('type' in session) && session.user.emailVerified) // Check emailVerified for regular sessions
     || pagesToBypass.includes(pathname as Route)
   ) {
     return null;
@@ -62,6 +63,9 @@ export function EmailVerificationDialog() {
 
   const canResend = !lastResendTime || Date.now() - lastResendTime > 60000; // 1 minute cooldown
   const isLoading = status === "pending";
+  
+  // At this point, we know it's a regular user session (not guest)
+  const userSession = session as Exclude<typeof session, { type: 'guest' }>;
 
   return (
     <Dialog open modal onOpenChange={(newState) => {
@@ -73,7 +77,7 @@ export function EmailVerificationDialog() {
         <DialogHeader>
           <DialogTitle>Verify your email</DialogTitle>
           <DialogDescription>
-            Please verify your email address to access all features. We sent a verification link to {session.user.email}.
+            Please verify your email address to access all features. We sent a verification link to {userSession.user.email}.
             The verification link will expire in {Math.floor(EMAIL_VERIFICATION_TOKEN_EXPIRATION_SECONDS / 3600)} hours.
 
             {!isProd && (

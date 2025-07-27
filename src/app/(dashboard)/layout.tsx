@@ -1,24 +1,28 @@
 import { AppSidebar } from "@/components/app-sidebar"
-import { getSessionFromCookie } from "@/utils/auth"
+import { getSessionOrGuest } from "@/utils/auth"
+import { GuestModeBanner } from "@/components/guest-mode-banner"
 import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
-import { redirect } from "next/navigation"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSessionFromCookie()
-
-  if (!session) {
-    return redirect('/')
-  }
+  // Always allow access, but get session (user or guest)
+  const sessionResult = await getSessionOrGuest()
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
+    <div className="min-h-screen">
+      {/* Show guest mode banner for guest sessions */}
+      {sessionResult && 'type' in sessionResult && sessionResult.type === 'guest' && (
+        <GuestModeBanner />
+      )}
+      
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          {children}
+        </SidebarInset>
+      </SidebarProvider>
+    </div>
   )
 }

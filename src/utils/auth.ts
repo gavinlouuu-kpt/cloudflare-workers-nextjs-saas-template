@@ -17,6 +17,13 @@ import {
   updateKVSession,
   CURRENT_SESSION_VERSION
 } from "./kv-session";
+import { 
+  createGuestSession, 
+  validateGuestSession, 
+  getGuestFeatureAccess,
+  GUEST_SESSION_COOKIE_NAME,
+  trackGuestInteraction 
+} from "./guest-session";
 import { cache } from "react"
 import type { SessionValidationResult } from "@/types";
 import { SESSION_COOKIE_NAME } from "@/constants";
@@ -283,18 +290,83 @@ export const getSessionFromCookie = cache(async (): Promise<SessionValidationRes
   return validateSessionToken(decoded.token, decoded.userId);
 })
 
+/**
+ * Gets session (user or guest) from cookies, with fallback to guest session creation
+ */
+export const getSessionOrGuest = cache(async (): Promise<SessionValidationResult> => {
+  // First try to get regular user session
+  const userSession = await getSessionFromCookie();
+  if (userSession) {
+    return userSession;
+  }
+
+  // Check for existing guest session
+  const cookieStore = await cookies();
+  const guestSessionId = cookieStore.get(GUEST_SESSION_COOKIE_NAME)?.value;
+  
+  if (guestSessionId) {
+    const guestSession = await validateGuestSession(guestSessionId);
+    if (guestSession) {
+      return {
+        type: 'guest',
+        session: guestSession,
+        features: getGuestFeatureAccess(),
+      };
+    }
+  }
+
+  // Create new guest session
+  const newGuestSession = await createGuestSession();
+  
+  // Set guest session cookie
+  await setGuestSessionCookie(newGuestSession.sessionId, new Date(newGuestSession.expiresAt));
+  
+  return {
+    type: 'guest',
+    session: newGuestSession,
+    features: getGuestFeatureAccess(),
+  };
+})
+
+/**
+ * Sets guest session cookie
+ */
+export async function setGuestSessionCookie(sessionId: string, expiresAt: Date): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.set(GUEST_SESSION_COOKIE_NAME, sessionId, {
+    httpOnly: true,
+    sameSite: isProd ? "strict" : "lax",
+    secure: isProd,
+    expires: expiresAt,
+    path: "/",
+  });
+}
+
+/**
+ * Deletes guest session cookie
+ */
+export async function deleteGuestSessionCookie(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete(GUEST_SESSION_COOKIE_NAME);
+}
+
 export const requireVerifiedEmail = cache(async ({
   doNotThrowError = false,
 }: {
   doNotThrowError?: boolean;
-} = {}) => {
+} = {}): Promise<KVSession | null> => {
   const session = await getSessionFromCookie();
 
   if (!session) {
     throw new ZSAError("NOT_AUTHORIZED", "Not authenticated");
   }
 
-  if (!session?.user?.emailVerified) {
+  // Type guard to ensure it's a regular user session (not guest)
+  if ('type' in session) {
+    throw new ZSAError("NOT_AUTHORIZED", "Guest users must sign up for full access");
+  }
+
+  if (!session.user?.emailVerified) {
     if (doNotThrowError) {
       return null;
     }
@@ -309,11 +381,16 @@ export const requireAdmin = cache(async ({
   doNotThrowError = false,
 }: {
   doNotThrowError?: boolean;
-} = {}) => {
+} = {}): Promise<KVSession | null> => {
   const session = await getSessionFromCookie();
 
   if (!session) {
     throw new ZSAError("NOT_AUTHORIZED", "Not authenticated");
+  }
+
+  // Type guard to ensure it's a regular user session (not guest)
+  if ('type' in session) {
+    throw new ZSAError("NOT_AUTHORIZED", "Guest users must sign up for full access");
   }
 
   if (session.user.role !== ROLES_ENUM.ADMIN) {

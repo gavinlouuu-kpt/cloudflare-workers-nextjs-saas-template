@@ -1,15 +1,14 @@
-import { getSessionFromCookie } from "@/utils/auth";
-import { redirect } from "next/navigation";
+import { getSessionOrGuest } from "@/utils/auth";
 import { PageHeader } from "@/components/page-header";
+import { GuestFeatureGate } from "@/components/guest-feature-gate";
 import { TransactionHistory } from "./_components/transaction-history";
 import { CreditPackages } from "./_components/credit-packages";
 
 export default async function BillingPage() {
-  const session = await getSessionFromCookie();
-
-  if (!session) {
-    redirect("/auth/login");
-  }
+  const sessionResult = await getSessionOrGuest();
+  
+  // Check if it's a guest session
+  const isGuest = sessionResult && 'type' in sessionResult;
 
   return (
     <>
@@ -26,10 +25,12 @@ export default async function BillingPage() {
         ]}
       />
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <CreditPackages />
-        <div className="mt-4">
-          <TransactionHistory />
-        </div>
+        <GuestFeatureGate feature="canAccessBilling">
+          <CreditPackages />
+          <div className="mt-4">
+            <TransactionHistory />
+          </div>
+        </GuestFeatureGate>
       </div>
     </>
   );

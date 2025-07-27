@@ -2,12 +2,17 @@ import { PageHeader } from "@/components/page-header"
 import { Alert } from "@heroui/react"
 import { COMPONENTS } from "./components-catalog"
 import { MarketplaceCard } from "@/components/marketplace-card"
-import { getSessionFromCookie } from "@/utils/auth"
+import { GuestFeatureGate } from "@/components/guest-feature-gate"
+import { getSessionOrGuest } from "@/utils/auth"
 import { getUserPurchasedItems } from "@/utils/credits"
 
 export default async function MarketplacePage() {
-  const session = await getSessionFromCookie();
-  const purchasedItems = session ? await getUserPurchasedItems(session.userId) : new Set();
+  const sessionResult = await getSessionOrGuest();
+  
+  // Only get purchased items for authenticated users
+  const purchasedItems = (sessionResult && !('type' in sessionResult)) 
+    ? await getUserPurchasedItems(sessionResult.userId) 
+    : new Set();
 
   return (
     <>
@@ -44,6 +49,7 @@ export default async function MarketplacePage() {
               credits={component.credits}
               containerClass={component.containerClass}
               isPurchased={purchasedItems.has(`COMPONENT:${component.id}`)}
+              isGuestMode={sessionResult ? 'type' in sessionResult : false}
             />
           ))}
         </div>

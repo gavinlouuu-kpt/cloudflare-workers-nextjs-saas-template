@@ -1,7 +1,6 @@
 import "server-only";
 
-import { getSessionFromCookie } from "@/utils/auth";
-import { redirect } from "next/navigation";
+import { requireVerifiedEmail } from "@/utils/auth";
 import { getDB } from "@/db";
 import { passKeyCredentialTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -16,11 +15,7 @@ interface ParsedPasskey extends Omit<PassKeyCredential, 'userAgent'> {
 }
 
 export default async function SecurityPage() {
-  const session = await getSessionFromCookie();
-
-  if (!session) {
-    return redirect("/sign-in");
-  }
+  const session = await requireVerifiedEmail();
 
   const db = getDB();
   const passkeys = await db

@@ -361,3 +361,40 @@ export type Team = InferSelectModel<typeof teamTable>;
 export type TeamMembership = InferSelectModel<typeof teamMembershipTable>;
 export type TeamRole = InferSelectModel<typeof teamRoleTable>;
 export type TeamInvitation = InferSelectModel<typeof teamInvitationTable>;
+
+// Guest session table for try-before-login functionality
+export const guestSessionTable = sqliteTable("guest_session", {
+  ...commonColumns,
+  id: text().primaryKey().$defaultFn(() => `guest_${createId()}`).notNull(),
+  sessionId: text({ length: 255 }).notNull().unique(),
+  ipAddress: text({ length: 100 }),
+  userAgent: text({ length: 500 }),
+  country: text({ length: 10 }),
+  city: text({ length: 100 }),
+  // Temporary data storage as JSON
+  tempData: text({ length: 50000 }),
+  // Activity tracking
+  lastActivityAt: integer({ mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
+  // Session expiration (shorter than regular sessions)
+  expiresAt: integer({ mode: "timestamp" }).notNull(),
+  // Rate limiting fields
+  apiCallCount: integer().default(0).notNull(),
+  lastApiCallAt: integer({ mode: "timestamp" }),
+}, (table) => ([
+  index('guest_session_id_idx').on(table.sessionId),
+  index('guest_ip_idx').on(table.ipAddress),
+  index('guest_expires_idx').on(table.expiresAt),
+]));
+
+// Guest interaction tracking for analytics and abuse prevention
+export const guestInteractionTable = sqliteTable("guest_interaction", {
+  ...commonColumns,
+  id: text().primaryKey().$defaultFn(() => `gint_${createId()}`).notNull(),
+  guestSessionId: text().notNull().references(() => guestSessionTable.id, { onDelete: 'cascade' }),
+  interactionType: text({ length: 50 }).notNull(), // 'page_view', 'feature_access', 'api_call'
+  interactionData: text({ length: 5000 }), // JSON data about the interaction
+  ipAddress: text({ length: 100 }),
+}, (table) => ([
+  index('guest_interaction_session_idx').on(table.guestSessionId),
+  index('guest_interaction_type_idx').on(table.interactionType),
+]));
