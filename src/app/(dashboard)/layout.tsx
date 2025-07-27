@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/sidebar"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  // Always allow access, but get session (user or guest)
+  // Get session without creating new guest sessions (to avoid cookie issues)
   const sessionResult = await getSessionOrGuest()
 
   return (

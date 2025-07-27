@@ -6,4 +6,13 @@ interface CloudflareEnv {
   BREVO_API_KEY?: string;
   GOOGLE_CLIENT_ID?: string;
   GOOGLE_CLIENT_SECRET?: string;
+  NEXT_PUBLIC_SAM_API_URL?: string;
+  SAM_API_KEY?: string;
+}
+
+declare namespace NodeJS {
+  interface ProcessEnv {
+    NEXT_PUBLIC_SAM_API_URL?: string;
+    SAM_API_KEY?: string;
+  }
 }

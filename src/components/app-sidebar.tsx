@@ -13,6 +13,7 @@ import {
   SquareTerminal,
   CreditCard,
   Users,
+  Microscope,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -94,6 +95,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         url: "/dashboard",
         icon: SquareTerminal,
         isActive: true,
+      },
+      {
+        title: "SAM Droplet",
+        url: "/dashboard/sam-droplet",
+        icon: Microscope,
       },
       {
         title: "Marketplace",

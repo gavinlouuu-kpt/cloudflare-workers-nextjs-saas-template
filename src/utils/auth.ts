@@ -291,9 +291,10 @@ export const getSessionFromCookie = cache(async (): Promise<SessionValidationRes
 })
 
 /**
- * Gets session (user or guest) from cookies, with fallback to guest session creation
+ * Gets session (user or guest) from cookies, without creating new guest sessions
+ * This version is safe to use in layouts and server components
  */
-export const getSessionOrGuest = cache(async (): Promise<SessionValidationResult> => {
+export const getSessionOrGuest = cache(async (): Promise<SessionValidationResult | null> => {
   // First try to get regular user session
   const userSession = await getSessionFromCookie();
   if (userSession) {
@@ -315,17 +316,8 @@ export const getSessionOrGuest = cache(async (): Promise<SessionValidationResult
     }
   }
 
-  // Create new guest session
-  const newGuestSession = await createGuestSession();
-  
-  // Set guest session cookie
-  await setGuestSessionCookie(newGuestSession.sessionId, new Date(newGuestSession.expiresAt));
-  
-  return {
-    type: 'guest',
-    session: newGuestSession,
-    features: getGuestFeatureAccess(),
-  };
+  // Return null instead of creating new session (to avoid cookie setting in layouts)
+  return null;
 })
 
 /**
