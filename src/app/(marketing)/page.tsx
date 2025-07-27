@@ -1,14 +1,14 @@
 import { Metadata } from "next";
-import { Hero } from "@/components/landing/hero";
-import { ServiceDetailModule } from "@/components/landing/service-detail-module";
-import { UseCaseModule } from "@/components/landing/use-case-module";
-import { TestimonialsModule } from "@/components/landing/testimonials-module";
-import { FAQ } from "@/components/landing/faq";
 import { 
-  templateServices, 
-  templateUseCases, 
-  templateTestimonials 
-} from "@/components/landing/landing-page-config";
+  Hero,
+  ServiceDetailModule,
+  UseCaseModule, 
+  TestimonialsModule,
+  FAQ,
+  templateServices,
+  templateUseCases,
+  templateTestimonials
+} from "@/components/landing";
 import { SITE_NAME, SITE_DESCRIPTION } from "@/constants";
 
 export const metadata: Metadata = {
