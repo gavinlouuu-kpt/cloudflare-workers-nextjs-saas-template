@@ -21,6 +21,7 @@ import { startAuthentication } from "@simplewebauthn/browser";
 
 interface SignInClientProps {
   redirectPath: string;
+  hasGuestSession?: boolean;
 }
 
 interface PasskeyAuthenticationButtonProps {
@@ -94,7 +95,7 @@ function PasskeyAuthenticationButton({ className, disabled, children, redirectPa
   );
 }
 
-const SignInPage = ({ redirectPath }: SignInClientProps) => {
+const SignInPage = ({ redirectPath, hasGuestSession }: SignInClientProps) => {
   const { execute: signIn } = useServerAction(signInAction, {
     onError: (error) => {
       toast.dismiss()
@@ -124,6 +125,13 @@ const SignInPage = ({ redirectPath }: SignInClientProps) => {
           <h2 className="mt-2 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Sign in to your account
           </h2>
+          {hasGuestSession && (
+            <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-md">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
+                👋 You're currently exploring in trial mode. Sign in to keep your progress and unlock all features!
+              </p>
+            </div>
+          )}
           <p className="mt-2 text-muted-foreground">
             Or{" "}
             <Link href={`/sign-up?redirect=${encodeURIComponent(redirectPath)}`} className="font-medium text-primary hover:text-primary/90 underline">

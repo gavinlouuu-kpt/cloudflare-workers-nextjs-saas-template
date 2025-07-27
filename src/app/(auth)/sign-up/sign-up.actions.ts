@@ -6,6 +6,7 @@ import { userTable } from "@/db/schema"
 import { signUpSchema } from "@/schemas/signup.schema";
 import { hashPassword } from "@/utils/password-hasher";
 import { createSession, generateSessionToken, setSessionTokenCookie, canSignUp } from "@/utils/auth";
+import { convertGuestToUser } from "@/utils/guest-conversion";
 import { eq } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
@@ -70,6 +71,14 @@ export const signUpAction = createServerAction()
             "INTERNAL_SERVER_ERROR",
             "Failed to create user"
           );
+        }
+
+        // Handle guest session conversion if applicable
+        try {
+          await convertGuestToUser(user.id);
+        } catch (error) {
+          // Guest conversion is optional, don't fail signup if it fails
+          console.error("Failed to convert guest session:", error);
         }
 
         try {

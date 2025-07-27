@@ -27,9 +27,10 @@ import { REDIRECT_AFTER_SIGN_IN } from "@/constants";
 
 interface SignUpClientProps {
   redirectPath: string;
+  hasGuestSession?: boolean;
 }
 
-const SignUpPage = ({ redirectPath }: SignUpClientProps) => {
+const SignUpPage = ({ redirectPath, hasGuestSession }: SignUpClientProps) => {
   const { isTurnstileEnabled } = useConfigStore();
   const [isPasskeyModalOpen, setIsPasskeyModalOpen] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -120,6 +121,13 @@ const SignUpPage = ({ redirectPath }: SignUpClientProps) => {
           <h2 className="mt-6 text-2xl md:text-3xl font-bold tracking-tight text-foreground">
             Create your account
           </h2>
+          {hasGuestSession && (
+            <div className="mt-2 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
+              <p className="text-sm text-green-800 dark:text-green-200">
+                🎉 Ready to unlock the full experience? Create your free account to save your progress!
+              </p>
+            </div>
+          )}
           <p className="mt-2 text-muted-foreground">
             Already have an account?{" "}
             <Link href={`/sign-in?redirect=${encodeURIComponent(redirectPath)}`} className="font-medium text-primary hover:text-primary/90 underline">

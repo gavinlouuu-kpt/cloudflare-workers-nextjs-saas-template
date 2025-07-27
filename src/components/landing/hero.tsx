@@ -30,16 +30,26 @@ export function Hero() {
         </p>
         
         <div className="flex items-center justify-center gap-x-4 md:gap-x-6">
-          <a href={GITHUB_REPO_URL} target="_blank">
-            <Button size="lg" className="rounded-full">
-              View on GitHub
-            </Button>
-          </a>
-          <Link href="/sign-in">
-            <Button variant="outline" size="lg" className="rounded-full">
-              Try Demo
+          <Link href="/dashboard">
+            <Button size="lg" className="rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600">
+              Try it Free - No Signup Required
             </Button>
           </Link>
+          <Link href="/sign-in">
+            <Button variant="outline" size="lg" className="rounded-full">
+              I Have an Account
+            </Button>
+          </Link>
+        </div>
+        
+        <div className="flex items-center justify-center gap-x-4 text-sm text-muted-foreground">
+          <span>✨ 2-hour trial</span>
+          <span>•</span>
+          <span>🚀 No credit card</span>
+          <span>•</span>
+          <a href={GITHUB_REPO_URL} target="_blank" className="hover:text-indigo-600 transition-colors">
+            ⭐ Star on GitHub
+          </a>
         </div>
       </div>
     </HeroTemplate>

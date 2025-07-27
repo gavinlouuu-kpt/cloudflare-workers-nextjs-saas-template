@@ -44,7 +44,7 @@ export function GuestModeBanner({ className, showDismiss = true }: GuestModeBann
             <div className="flex items-center gap-2">
               <User className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <span className="font-semibold text-blue-900 dark:text-blue-100">
-                Guest Mode
+                Free Trial Active
               </span>
             </div>
             
@@ -73,7 +73,7 @@ export function GuestModeBanner({ className, showDismiss = true }: GuestModeBann
               className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Link href="/sign-up">
-                Sign Up for Full Access
+                Create Free Account
               </Link>
             </Button>
             

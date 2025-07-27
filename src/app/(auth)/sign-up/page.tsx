@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getSessionFromCookie } from "@/utils/auth";
+import { getSessionFromCookie, getSessionOrGuest } from "@/utils/auth";
 import SignUpClientComponent from "./sign-up.client";
 import { redirect } from "next/navigation";
 import { REDIRECT_AFTER_SIGN_IN } from "@/constants";
@@ -15,14 +15,24 @@ const SignUpPage = async ({
   searchParams: Promise<{ redirect?: string }>;
 }) => {
   const { redirect: redirectParam } = await searchParams;
-  const session = await getSessionFromCookie();
+  
+  // Check for authenticated user session (not guest)
+  const userSession = await getSessionFromCookie();
   const redirectPath = redirectParam ?? REDIRECT_AFTER_SIGN_IN as unknown as string;
 
-  if (session) {
+  // If user is already authenticated, redirect them
+  if (userSession) {
     return redirect(redirectPath);
   }
 
-  return <SignUpClientComponent redirectPath={redirectPath} />
+  // Check if there's an active guest session for context
+  const sessionOrGuest = await getSessionOrGuest();
+  const hasGuestSession = sessionOrGuest && 'type' in sessionOrGuest;
+
+  return <SignUpClientComponent 
+    redirectPath={redirectPath} 
+    hasGuestSession={hasGuestSession}
+  />
 }
 
 export default SignUpPage;
