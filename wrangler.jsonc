@@ -5,7 +5,7 @@
  {
     "$schema": "node_modules/wrangler/config-schema.json",
     "account_id": "82e5aa3e06eba55221231ef482269452",
-    "name": "cloudflare-workers-nextjs-saas-template",
+    "name": "your-project-name",
     "main": ".open-next/worker.js",
     "compatibility_date": "2025-03-01",
     "compatibility_flags": [
@@ -39,9 +39,9 @@
      * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
      */
     "vars": {
-        "EMAIL_FROM": "no-reply@notifications.agenticdev.agency",
-        "EMAIL_FROM_NAME": "AgenticDev.agency",
-        "EMAIL_REPLY_TO": "support@agenticdev.agency"
+        "EMAIL_FROM": "no-reply@your-domain.com",
+        "EMAIL_FROM_NAME": "[Your Company]",
+        "EMAIL_REPLY_TO": "support@your-domain.com"
     },
     /**
      * Note: Use secrets to store sensitive data.
@@ -55,7 +55,7 @@
      "services": [
       {
         "binding": "WORKER_SELF_REFERENCE",
-        "service": "cloudflare-workers-nextjs-saas-template"
+        "service": "your-project-name"
       }
     ],
 
@@ -78,7 +78,7 @@
     "d1_databases": [
         {
             "binding": "NEXT_TAG_CACHE_D1",
-            "database_name": "cloudflare-workers-nextjs-saas",
+            "database_name": "your-database-name",
             "database_id": "94dd1269-a29c-4621-adff-1762d1af6926",
             "migrations_dir": "src/db/migrations"
         }

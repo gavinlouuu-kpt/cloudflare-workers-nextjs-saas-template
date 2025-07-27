@@ -3,7 +3,7 @@ import { SiX as XIcon, SiGithub as GithubIcon } from '@icons-pack/react-simple-i
 import ThemeSwitch from "@/components/theme-switch";
 import { GITHUB_REPO_URL, SITE_NAME } from "@/constants";
 import { Button } from "./ui/button";
-import AgenticDevStudioLogo from "./agenticdev-studio-logo";
+
 import { getGithubStars } from "@/utils/stats";
 import { Suspense } from "react";
 
@@ -48,7 +48,7 @@ export function Footer() {
               <h3 className="text-sm font-semibold text-foreground text-center md:text-left">Social</h3>
               <div className="flex items-center space-x-4">
                 <a
-                  href="https://github.com/LubomirGeorgiev"
+                  href="https://github.com/[your-username]"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground"
@@ -57,7 +57,7 @@ export function Footer() {
                   <span className="sr-only">GitHub</span>
                 </a>
                 <a
-                  href="https://x.com/LubomirGeorg"
+                  href="https://x.com/[your-twitter]"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground"
@@ -87,13 +87,11 @@ export function Footer() {
                   <ThemeSwitch />
 
                   <a
-                    href="https://agenticdev.agency"
+                    href="https://your-company.com"
                     target="_blank"
                     className="flex items-center font-medium text-sm hover:text-foreground transition-colors"
                   >
-                    <span className="whitespace-nowrap">Built by</span>
-                    <AgenticDevStudioLogo className="h-7 w-7 mx-1.5" />
-                    <span className="whitespace-nowrap">AgenticDev</span>
+                    <span className="whitespace-nowrap">Built by [Your Company]</span>
                   </a>
                 </div>
               </div>

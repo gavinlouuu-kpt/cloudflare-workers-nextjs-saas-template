@@ -7,9 +7,9 @@ alwaysApply: true
 
 This is a comprehensive, production-ready Next.js SaaS template designed to run on Cloudflare Workers with OpenNext. It includes authentication, team management, billing, and other common SaaS features needed to launch a modern web application.
 
-**Live Demo**: [nextjs-saas-template.agenticdev.agency](mdc:https:/nextjs-saas-template.agenticdev.agency/sign-up)
+**Live Demo**: [your-domain.com](https://your-domain.com)
 
-**GitHub Repository**: [cloudflare-workers-nextjs-saas-template](mdc:https:/github.com/LubomirGeorgiev/cloudflare-workers-nextjs-saas-template)
+**GitHub Repository**: [your-repo](https://github.com/[your-username]/[your-repo])
 
 ## Key Capabilities
 
